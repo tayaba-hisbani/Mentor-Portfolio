@@ -1,31 +1,11 @@
-"""
-Wires agents + tasks into small, single-purpose Crews and exposes one
-function per app feature. Each crew is rebuilt per call (cheap — CrewAI
-agents/tasks are lightweight Python objects) so a fresh run never carries
-stale context from a previous one.
-"""
-
 from crewai import Crew, Process, LLM
 
 from agents import build_agents
-from tasks import (
-    research_task,
-    portfolio_review_task,
-    portfolio_builder_task,
-    gig_creator_task,
-    mentor_chat_task,
-)
-from tools import DuckDuckGoSearchTool
+from tasks import research_task, portfolio_review_task, portfolio_builder_task, gig_creator_task, mentor_chat_task
+from search_tools import DuckDuckGoSearchTool
 
 
 def get_llm(api_key: str, model: str = "groq/openai/gpt-oss-120b") -> LLM:
-    """
-    Central place to configure the Groq-backed LLM. Kept deliberately
-    minimal (temperature + api_key only) — some CrewAI/LiteLLM versions
-    error on extra Groq-unsupported kwargs like reasoning_effort/top_p/stop,
-    so we don't pass any until you've confirmed your pinned versions accept
-    them. See README "Troubleshooting" if you hit an "is_litellm" error.
-    """
     return LLM(
         model=model,
         api_key=api_key,
@@ -76,11 +56,7 @@ def run_gig_creator(llm, gig_profile: dict) -> str:
 
     platform = gig_profile.get("platform", "Fiverr")
     service = gig_profile.get("service", "")
-    t1 = research_task(
-        agents["researcher"],
-        topic=f"{platform} gig pricing and structure for '{service}'",
-        field=service,
-    )
+    t1 = research_task(agents["researcher"], topic=f"{platform} gig pricing and structure for '{service}'", field=service)
     t2 = gig_creator_task(agents["gig_expert"], gig_profile)
     t2.context = [t1]
 
