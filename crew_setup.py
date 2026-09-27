@@ -1,3 +1,7 @@
+from litellm_patch import apply_patch
+apply_patch()
+
+from crewai import Crew, Process, LLM
 from crewai import Crew, Process, LLM
 
 from agents import build_agents
