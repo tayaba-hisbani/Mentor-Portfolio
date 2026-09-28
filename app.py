@@ -1,6 +1,6 @@
 """
 Portfolio & Gig Mentor — a Streamlit front end over a small CrewAI crew,
-powered by Groq (openai/gpt-oss-120b), that helps freelancers build a
+powered by Google Gemini, that helps freelancers build a
 portfolio, get it reviewed, write Fiverr/Upwork gigs, and check current
 market facts before making claims.
 """
@@ -56,16 +56,6 @@ st.markdown(
         padding: 1.4rem 1.5rem;
         margin-bottom: 1rem;
     }
-    .badge {
-        display: inline-block;
-        padding: 0.15rem 0.65rem;
-        border-radius: 999px;
-        background: rgba(124,58,237,0.18);
-        color: #C4B5FD;
-        font-size: 0.78rem;
-        font-weight: 600;
-        margin-right: 0.4rem;
-    }
     .result-box {
         background: #12141C;
         border-left: 3px solid #7C3AED;
@@ -95,16 +85,30 @@ st.markdown(
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
+
+def get_secret(name: str, default: str = "") -> str:
+    """Reads from Streamlit secrets first, then falls back to environment variables."""
+    try:
+        return st.secrets[name]
+    except Exception:
+        return os.getenv(name, default)
+
+
+api_key = get_secret("GEMINI_API_KEY")
+model_name = get_secret("GEMINI_MODEL", "gemini/gemini-3.1-flash-lite")
+
 with st.sidebar:
     st.markdown("### ⚙️ Setup")
-    default_key = os.getenv("GROQ_API_KEY", "")
-    api_key = st.text_input(
-        "Groq API key",
-        value=default_key,
-        type="password",
-        help="Get a free key at console.groq.com/keys. Stored only for this session.",
-    )
-    st.caption("Model: `groq/openai/gpt-oss-120b`")
+    if api_key:
+        st.success("Gemini API key loaded from secrets.", icon="✅")
+    else:
+        st.error(
+            "No Gemini API key found. Add `GEMINI_API_KEY` to "
+            "`.streamlit/secrets.toml` (local) or your app's Settings → "
+            "Secrets (Streamlit Cloud).",
+            icon="🔑",
+        )
+    st.caption(f"Model: `{model_name}`")
     st.divider()
     st.markdown("### 📎 What this app does")
     st.caption(
@@ -119,12 +123,16 @@ with st.sidebar:
         st.session_state.chat_history = []
         st.rerun()
 
-llm = get_llm(api_key) if api_key else None
+llm = get_llm(api_key, model_name) if api_key else None
 
 
 def require_key():
     if not api_key:
-        st.warning("Add your Groq API key in the sidebar to use this feature.", icon="🔑")
+        st.warning(
+            "Add your Gemini API key to `.streamlit/secrets.toml` (or your "
+            "deployed app's Secrets settings) to use this feature.",
+            icon="🔑",
+        )
         return False
     return True
 
